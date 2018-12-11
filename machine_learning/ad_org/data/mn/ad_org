@@ -1,0 +1,335 @@
+
+# coding: utf-8
+
+# In[1]:
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+get_ipython().run_line_magic('matplotlib', 'inline')
+
+
+# In[12]:
+
+
+df_train = pd.read_csv("./data/mn/ad_org_train.csv")
+df_test = pd.read_csv("./data/mn/ad_org_test.csv")
+
+
+# In[13]:
+
+
+df_train.shape
+
+
+# In[14]:
+
+
+df_train.head()
+
+
+# In[15]:
+
+
+def convert_dur(time):
+    time = time[2:]
+    for ch in ['H','M','S']:
+        if ch in time:
+            time = time.replace(ch," ")
+    time = time.split(" ")
+    time.remove('')
+    if(len(time)==3):
+        hrs = int(time[0])*3600
+        mins = int(time[1])*60
+        secs = int(time[2])
+        return(hrs+mins+secs)
+    elif(len(time)==2):
+        mins = int(time[0])*60
+        secs = int(time[1])
+        return(mins+secs)
+    else:
+        secs = int(time[0])
+        return(secs)
+
+
+# In[16]:
+
+
+df_train['duration'] = df_train['duration'].apply(convert_dur)
+df_test['duration'] = df_test['duration'].apply(convert_dur)
+
+
+# In[17]:
+
+
+df_train.head()
+
+
+# In[18]:
+
+
+df_train['published'] = df_train['published'].apply(pd.to_datetime)
+df_test['published'] = df_test['published'].apply(pd.to_datetime)
+
+
+# In[20]:
+
+
+df_train['p_day'] = df_train['published'].apply(lambda x: x.day)
+df_train['p_month'] = df_train['published'].apply(lambda x: x.month)
+df_train['p_year'] = df_train['published'].apply(lambda x: x.year)
+df_train['p_dayofweek'] = df_train['published'].apply(lambda x: x.dayofweek)
+
+
+# In[22]:
+
+
+df_test['p_day'] = df_test['published'].apply(lambda x: x.day)
+df_test['p_month'] = df_test['published'].apply(lambda x: x.month)
+df_test['p_year'] = df_test['published'].apply(lambda x: x.year)
+df_test['p_dayofweek'] = df_test['published'].apply(lambda x: x.dayofweek)
+
+
+# In[24]:
+
+
+df_train.drop('published', axis = 1, inplace = True)
+df_test.drop('published', axis = 1, inplace = True)
+
+
+# In[26]:
+
+
+df_test.head(5)
+
+
+# In[27]:
+
+
+df_train['adview'] = df_train['adview'].apply(int)
+
+
+# In[28]:
+
+
+def convert_int(x):
+    if x != 'F':
+        x = int(x)
+        return x
+    return 'F'
+
+
+# In[29]:
+
+
+cols = ['views','likes','dislikes','comment']
+for i in cols:
+    df_train[i] = df_train[i].apply(convert_int)
+    df_test[i] = df_test[i].apply(convert_int)
+
+
+# In[31]:
+
+
+def fill_likes(x):
+    if x[2] == 'F':
+        if x[1] == 'A':
+            return (x[0]*0.6)
+        elif x[1] == 'B':
+            return (x[0]*0.8)
+        elif x[1] == 'C':
+            return (x[0]*0.2)
+        elif x[1] == 'D':
+            return (x[0]*0.3)
+        elif x[1] == 'E':
+            return (x[0]*0.2)
+        elif x[1] == 'F':
+            return (x[0]*0.7)
+        elif x[1] == 'G':
+            return (x[0]*0.3)
+        elif x[1] == 'H':
+            return (x[0]*0.3)
+    return x[2]
+
+def fill_dislikes(x):
+    if x[2] == 'F':
+        if x[1] == 'A':
+            return (x[0]*0.02)
+        elif x[1] == 'B':
+            return (x[0]*0.03)
+        elif x[1] == 'C':
+            return (x[0]*0.04)
+        elif x[1] == 'D':
+            return (x[0]*0.03)
+        elif x[1] == 'E':
+            return (x[0]*0.03)
+        elif x[1] == 'F':
+            return (x[0]*0.06)
+        elif x[1] == 'G':
+            return (x[0]*0.02)
+        elif x[1] == 'H':
+            return (x[0]*0.03)
+    return x[2]
+
+
+# In[33]:
+
+
+df_train['likes'] = df_train[['views','category','likes']].apply(fill_likes, axis = 1).apply(round)
+df_test['likes'] = df_test[['views','category','likes']].apply(fill_likes, axis = 1).apply(round)
+
+
+# In[34]:
+
+
+df_train['dislikes'] = df_train[['views','category','dislikes']].apply(fill_dislikes, axis = 1).apply(round)
+df_test['dislikes'] = df_test[['views','category','dislikes']].apply(fill_dislikes, axis = 1).apply(round)
+
+
+# In[35]:
+
+
+df_train.replace({'category': {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8}}, inplace=True)
+df_test.replace({'category': {'A': 1, 'B': 2, 'C': 3, 'D': 4, 'E': 5, 'F': 6, 'G': 7, 'H': 8}}, inplace=True)
+
+
+# In[36]:
+
+
+df_train.head(5)
+
+
+# In[37]:
+
+
+df_train.drop([7447,8112], inplace=True)
+
+
+# In[38]:
+
+
+df_train['views'] = df_train['views'].apply(int)
+
+
+# In[39]:
+
+
+df_train = df_train[df_train['adview'] < 50]
+
+
+# In[41]:
+
+
+
+v_fill = round(df_test[(df_test['p_year'] == 2013) & (df_test['p_month'] == 10) & (df_test['views'] != 'F')]['views'].mean())
+
+
+# In[42]:
+
+
+def fill_views(x):
+    if x == 'F':
+        x = v_fill
+        return x
+    return x
+
+
+# In[43]:
+
+
+df_test['views'] = df_test['views'].apply(fill_views)
+
+
+# In[45]:
+
+
+from sklearn.model_selection import train_test_split
+X = df_train.drop(['vidid','adview','comment','likes','p_day','dislikes','p_dayofweek','category','p_month'], axis =1)
+y = df_train['adview']
+
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size = 0.3, random_state = 101)
+
+
+# In[46]:
+
+
+from sklearn.ensemble import RandomForestRegressor
+
+
+# In[47]:
+
+
+rfr = RandomForestRegressor(n_estimators= 300, min_samples_leaf=150, max_features=1, min_samples_split=4, n_jobs = -1)
+
+
+# In[48]:
+
+
+rfr.fit(X_train, y_train)
+
+
+# In[49]:
+
+
+pred = rfr.predict(X_test)
+
+
+# In[51]:
+
+
+from sklearn import metrics
+
+
+# In[52]:
+
+
+print ('Mean Squared Error: %s' %metrics.mean_squared_error(y_test, pred))
+print ('Root Mean Squared Error: %s' %np.sqrt(metrics.mean_squared_error(y_test, pred)))
+
+
+# In[54]:
+
+
+X = df_train.drop(['vidid','adview','likes','dislikes','comment','category','p_day','p_dayofweek','p_month'], axis = 1)
+y = df_train['adview']
+
+
+# In[55]:
+
+
+final_test = df_test.drop(['vidid','likes','dislikes','comment','category','p_day','p_dayofweek','p_month'], axis = 1)
+
+
+# In[56]:
+
+
+rfr.fit(X, y)
+
+
+# In[57]:
+
+
+predictions = rfr.predict(final_test)
+
+
+# In[69]:
+
+
+temp = temp.round()
+
+
+# In[72]:
+
+
+s_id = df_test['vidid']
+
+
+# In[73]:
+
+
+temp = pd.Series(temp)
+output = pd.concat([s_id,temp],axis = 1)
+output.columns = ['vid_id','ad_view']
+output.to_csv('out.csv',index=False)
